@@ -201,7 +201,7 @@ contains
   use modmpi,      only : excjs
   implicit none
 
-  real    :: strain2,mlen
+  real    :: strain2,mlen,RiRatio
   integer :: i,j,k,kp,km,jp,jm
 
   if(lsmagorinsky) then
@@ -277,6 +277,19 @@ contains
               ((v0(i,jp,kp)-v0(i,jp,k))   / dzh(kp) + &
               (w0(i,jp,kp)-w0(i,j,kp))   *dyi        )**2    )
           end if
+
+          !SvdL, 27-04-2023: ratio of gradient Richardson number to critical Richardson number (equal to Prandtl in Smagorinsky-Lilly model)
+          RiRatio    = min( grav/thvf(k) * dthvdz(i,j,k) / (2. * strain2 * Prandtl) , (1. - 0.00001) )
+
+          !SvdL, 24-04-2023: MO consistent gradient (via sgs_surface_fix) not yet available at this point, as it requires ekm/ekh 
+          ! same holds true for the shear calculation here above!! DALES adapts local_dudz / local_dthdz to comply with MO flux BUT closure K-diffusivity (2-step approach)
+
+          ! if (k == kmin) then
+          !     if()
+          !   RiRatio    = min( grav/thvf(k) * dthvdz(i,j,k) / (2. * strain2 * Prandtl) , (1. - 0.00001) )
+          ! else if (k .gt. kmin)
+          !   RiRatio    = min( grav/thvf(k) * dthvdz(i,j,k) / (2. * strain2 * Prandtl) , (1. - 0.00001) )
+          ! end if
 
           ekm(i,j,k)  = mlen ** 2. * sqrt(2. * strain2)
           ekh(i,j,k)  = ekm(i,j,k) / Prandtl
