@@ -139,6 +139,7 @@ contains
     use modglobal, only : nsv, lmoist
     use modfields, only : up,vp,wp,e12p,thl0,thlp,qt0,qtp,sv0,svp
     use modsurfdata,only : thlflux,qtflux,svflux
+    use modsurface, only: dudz, dvdz, dthldz
     implicit none
     integer n
 
@@ -197,7 +198,7 @@ contains
   use modglobal,   only : i1,j1,kmax,k1,ih,jh,i2,j2,delta,ekmin,grav,zf,fkar,deltai, &
                           dxi,dyi,dzf,dzh
   use modfields,   only : dthvdz,e120,u0,v0,w0,thvf
-  use modsurfdata, only : dudz,dvdz,z0m
+  use modsurfdata, only : dudz,dvdz,dthldz,z0m
   use modmpi,      only : excjs
   implicit none
 
@@ -279,18 +280,17 @@ contains
           end if
 
           !SvdL, 27-04-2023: ratio of gradient Richardson number to critical Richardson number (equal to Prandtl in Smagorinsky-Lilly model)
-          RiRatio    = min( grav/thvf(k) * dthvdz(i,j,k) / (2. * strain2 * Prandtl) , (1. - 0.00001) )
+          !SvdL,  1-05-2023: MO consistend gradient for k==1 should be given by dthldz(i,j) from modsurfdata (when no moisture thl = thv ?)
+          if(k ==1 ) then
+            RiRatio    = min( grav/thvf(k) * dthldz(i,j) / (2. * strain2 * Prandtl) , (1. - 0.00001) )
+          else
+            RiRatio    = min( grav/thvf(k) * dthvdz(i,j,k) / (2. * strain2 * Prandtl) , (1. - 0.00001) )
+          end if
 
-          !SvdL, 24-04-2023: MO consistent gradient (via sgs_surface_fix) not yet available at this point, as it requires ekm/ekh 
+          !SvdL, 24-04-2023: more MO-like consistent gradient (as via sgs_surface_fix) not yet available at this point, as it requires ekm/ekh 
           ! same holds true for the shear calculation here above!! DALES adapts local_dudz / local_dthdz to comply with MO flux BUT closure K-diffusivity (2-step approach)
-
-          ! if (k == kmin) then
-          !     if()
-          !   RiRatio    = min( grav/thvf(k) * dthvdz(i,j,k) / (2. * strain2 * Prandtl) , (1. - 0.00001) )
-          ! else if (k .gt. kmin)
-          !   RiRatio    = min( grav/thvf(k) * dthvdz(i,j,k) / (2. * strain2 * Prandtl) , (1. - 0.00001) )
-          ! end if
-
+          ! see above, real MO consistent gradients should be available via modsurfdata (calculated in modsurface.f90)...
+  
           ekm(i,j,k)  = mlen ** 2. * sqrt(2. * strain2)
           ekh(i,j,k)  = ekm(i,j,k) / Prandtl
 

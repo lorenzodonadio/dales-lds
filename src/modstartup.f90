@@ -332,7 +332,7 @@ contains
         endif
       end if
 
-  !Check Namroptions
+  !Check Namoptions
 
 
     if (runtime < 0)stop 'runtime out of range/not set'
