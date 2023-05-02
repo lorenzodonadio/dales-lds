@@ -138,8 +138,7 @@ contains
 
     use modglobal, only : nsv, lmoist
     use modfields, only : up,vp,wp,e12p,thl0,thlp,qt0,qtp,sv0,svp
-    use modsurfdata,only : thlflux,qtflux,svflux
-    use modsurface, only: dudz, dvdz, dthldz
+    use modsurfdata,only : thlflux,qtflux,svflux, dudz, dvdz, dthldz
     implicit none
     integer n
 
