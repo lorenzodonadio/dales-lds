@@ -138,7 +138,7 @@ contains
 
     use modglobal, only : nsv, lmoist
     use modfields, only : up,vp,wp,e12p,thl0,thlp,qt0,qtp,sv0,svp
-    use modsurfdata,only : thlflux,qtflux,svflux, dudz, dvdz, dthldz
+    use modsurfdata,only : thlflux,qtflux,svflux
     implicit none
     integer n
 
@@ -280,7 +280,7 @@ contains
 
           !SvdL, 27-04-2023: ratio of gradient Richardson number to critical Richardson number (equal to Prandtl in Smagorinsky-Lilly model)
           !SvdL,  1-05-2023: MO consistend gradient for k==1 should be given by dthldz(i,j) from modsurfdata (when no moisture thl = thv ?)
-          if(k ==1 ) then
+          if( k ==1 ) then
             RiRatio    = min( grav/thvf(k) * dthldz(i,j) / (2. * strain2 * Prandtl) , (1. - 0.00001) )
           else
             RiRatio    = min( grav/thvf(k) * dthvdz(i,j,k) / (2. * strain2 * Prandtl) , (1. - 0.00001) )
