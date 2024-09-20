@@ -194,15 +194,12 @@ subroutine tstep_integrate
 
   rk3coef = rdt / (4. - dble(rk3step))
 
-    qt0 = 0.
-    qtm = 0.
-
   if(rk3step /= 3) then
      u0   = um   + rk3coef * up
      v0   = vm   + rk3coef * vp
      w0   = wm   + rk3coef * wp
      thl0 = thlm + rk3coef * thlp
-     if(lmoist) qt0  = qtm  + rk3coef * qtp !SvdL, added this for testing
+     if(lmoist) qt0  = qtm  + rk3coef * qtp !SvdL, only when you actually WANT moisture, do this
      sv0  = svm  + rk3coef * svp
      e120 = max(e12min,e12m + rk3coef * e12p)
   else ! step 3 - store result in both ..0 and ..m
@@ -214,20 +211,13 @@ subroutine tstep_integrate
      w0 = wm
      thlm = thlm + rk3coef * thlp
      thl0 = thlm
-     if(lmoist) qtm  = qtm  + rk3coef * qtp !SvdL, added this for testing
-     if(lmoist) qt0  = qtm                  !SvdL, added this for testing
+     if(lmoist) qtm  = qtm  + rk3coef * qtp !SvdL, only when you actually WANT moisture, do this
+     if(lmoist) qt0  = qtm                  !SvdL, only when you actually WANT moisture, do this
      svm  = svm  + rk3coef * svp
      sv0 = svm
      e12m = max(e12min,e12m + rk3coef * e12p)
      e120 = e12m
   end if
 
-  do i=2,i1
-  do j=2,j1
-  do k=1,k1
-!     write (6,*) i,j,k,libm(i,j,k),u0(i,j,k),v0(i,j,k),w0(i,j,k),thl0(i,j,k),qt0(i,j,k),e120(i,j,k)
-  enddo
-  enddo
-  enddo
 end subroutine tstep_integrate
 end module tstep

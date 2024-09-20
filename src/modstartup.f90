@@ -760,6 +760,7 @@ contains
     else !if lwarmstart
 
       call readrestartfiles
+      call baseprofs !SvdL, tentative proposed change by Arseni Doyennel
       um   = u0
       vm   = v0
       wm   = w0
@@ -829,7 +830,7 @@ contains
 
       ! CvH - only do this for fixed timestepping. In adaptive dt comes from restartfile
       if(ladaptive .eqv. .false.) rdt=dtmax
-      call baseprofs !call baseprofs
+      ! call baseprofs !call baseprofs, SvdL, tentative proposed change by Arseni Doyennel
 
     end if  ! end if (.not. warmstart)
 
