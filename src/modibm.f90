@@ -385,7 +385,9 @@ contains
          u0, v0, w0, thl0, qt0, e120, sv0, &
          up, vp, wp, thlp, qtp, e12p, svp, &
          thl0av, qt0av
-      use modglobal,      only : rk3step,   kmax, i1, j1, k1, ih, jh, rdt, timee, dx, dy, dzh, dzf, nsv, e12min
+      use modglobal,      only : rk3step,   kmax, i1, j1, k1, ih, jh, rdt, timee, dx, dy, dzh, dzf, nsv, e12min, dx2i ,dy2i,dxi,dyi
+      !< dy2i =   (1/dx)**2
+      ! real :: dy2i            !<  (1dy)**2
       use modsubgriddata, only : ekm!, lsmagorinsky ! (SvdL, 16-05-2023:) added switch for use of Smagorinsky closure
       use modmpi,         only : excjs
       !clater use modnudgeboundary, only : Nsim
@@ -428,51 +430,45 @@ contains
 
                if (lnorm_x(i,j,k)) then     !< Wall in x-direction
 
-                  emmo = 0.25  * (  ekm(i,j,k)+ekm(i,j-1,k)+ekm(i-1,j-1,k)+ekm(i-1,j,k)  )
+                  emmo = calc_midpoint_ekm(i,j,k, -1, -1,0)
                   w_at_v_min  = 0.25*(w0(i-1,j,k)+w0(i-1,j,k+1)+w0(i-1,j-1,k)+w0(i-1,j-1,k+1))  !at v(i-1,j,k)
                   w_at_v_plus = 0.25*(w0(i  ,j,k)+w0(i  ,j,k+1)+w0(i  ,j-1,k)+w0(i  ,j-1,k+1))  !at v(i,j,k)
                   call log_wallaw(v0(i-1,j,k),w_at_v_min ,Cm_xwall,tau_vu_min)   !if v0 > 0, tau > 0
                   call log_wallaw(v0(i,j,k)  ,w_at_v_plus,Cm_xwall,tau_vu_plus)  !minus sign in tendency enforces opposing friction
 
-                  tempvp(i-1,j,k) = tempvp(i-1,j,k) - 0.5 * emmo*((v0(i,j,k)-v0(i-1,j,k))/dx) / dx - 0.5 * tau_vu_min /dx
-                  tempvp(i  ,j,k) = tempvp(i  ,j,k) + 0.5 * emmo*((v0(i,j,k)-v0(i-1,j,k))/dx) / dx - 0.5 * tau_vu_plus/dx
+                  tempvp(i-1,j,k) = tempvp(i-1,j,k) - 0.5 * emmo*(v0(i,j,k)-v0(i-1,j,k))*dx2i - 0.5 * tau_vu_min *dxi
+                  tempvp(i  ,j,k) = tempvp(i  ,j,k) + 0.5 * emmo*(v0(i,j,k)-v0(i-1,j,k))*dx2i - 0.5 * tau_vu_plus*dxi
                   !  dv/dt = - d/dx uv = -uv|_xright + uv|_xleft
                   !two times sign can be understood from uv = - K dv/dx. right of building dv/dx > 0, left of it dv/dx < 0
                   ! for v>0 in between buildings this gives uv|_right > 0, uv|_left < 0. in that case both have a damping tendency on v
 
-                  empo = 0.25  * ( ekm(i,j+1,k)+ekm(i,j,k)+ekm(i-1,j,k)+ekm(i-1,j+1,k)  )
+                  empo = calc_midpoint_ekm(i,j,k, -1, 1, 0)
                   w_at_v_min  = 0.25*(w0(i-1,j+1,k)+w0(i-1,j+1,k+1)+w0(i-1,j,k)+w0(i-1,j,k+1))
                   w_at_v_plus = 0.25*(w0(i  ,j+1,k)+w0(i  ,j+1,k+1)+w0(i  ,j,k)+w0(i  ,j,k+1))
                   call log_wallaw(v0(i-1,j+1,k),w_at_v_min ,Cm_xwall,tau_vu_min)
                   call log_wallaw(v0(i,j+1,k)  ,w_at_v_plus,Cm_xwall,tau_vu_plus)
 
-                  tempvp(i-1,j+1,k) = tempvp(i-1,j+1,k) - 0.5 * empo*((v0(i,j+1,k)-v0(i-1,j+1,k))/dx) / dx - 0.5 * tau_vu_min   /dx
-                  tempvp(i  ,j+1,k) = tempvp(i,j+1,k)   + 0.5 * empo*((v0(i,j+1,k)-v0(i-1,j+1,k))/dx) / dx - 0.5 * tau_vu_plus  /dx
+                  tempvp(i-1,j+1,k) = tempvp(i-1,j+1,k) - 0.5 * empo*(v0(i,j+1,k)-v0(i-1,j+1,k))*dx2i - 0.5 * tau_vu_min   *dxi
+                  tempvp(i  ,j+1,k) = tempvp(i,j+1,k)   + 0.5 * empo*(v0(i,j+1,k)-v0(i-1,j+1,k))*dx2i - 0.5 * tau_vu_plus  *dxi
 
-                  emom = ( dzf(k-1) * ( ekm(i,j,k)  + ekm(i-1,j,k)  )  + &
-                     dzf(k)  * ( ekm(i,j,k-1) + ekm(i-1,j,k-1) ) ) / &
-                     ( 4.   * dzh(k) )
+                  emom = calc_midpoint_ekm(i,j,k, -1, 0,-1)
 
                   v_at_w_min  = 0.25 * (v0(i-1,j,k-1)+v0(i-1,j,k)+v0(i-1,j+1,k-1)+v0(i-1,j+1,k) )
                   v_at_w_plus = 0.25 * (v0(i  ,j,k-1)+v0(i  ,j,k)+v0(i  ,j+1,k-1)+v0(i  ,j+1,k) )
                   call log_wallaw(w0(i-1,j,k),v_at_w_min ,Cm_xwall,tau_wu_min)
                   call log_wallaw(w0(i  ,j,k),v_at_w_plus,Cm_xwall,tau_wu_plus)
 
+                  tempwp(i-1,j,k) = tempwp(i-1,j,k) - 0.5 * emom * (w0(i,j,k)-w0(i-1,j,k))*dx2i - 0.5 * tau_wu_min*dxi
+                  tempwp(i  ,j,k) = tempwp(i,j,k)   + 0.5 * emom * (w0(i,j,k)-w0(i-1,j,k))*dx2i - 0.5 * tau_wu_plus *dxi
 
-                  tempwp(i-1,j,k) = tempwp(i-1,j,k) - 0.5 * emom * ((w0(i,j,k)-w0(i-1,j,k))/dx)/dx - 0.5 * tau_wu_min/dx
-                  tempwp(i  ,j,k) = tempwp(i,j,k)   + 0.5 * emom * ((w0(i,j,k)-w0(i-1,j,k))/dx)/dx - 0.5 * tau_wu_plus /dx
-
-
-                  emop = ( dzf(k) * ( ekm(i,j,k+1)  + ekm(i-1,j,k+1)  )  + &
-                     dzf(k+1)  * ( ekm(i,j,k) + ekm(i-1,j,k) ) ) / &
-                     ( 4.   * dzh(k+1) )
+                  emop = calc_midpoint_ekm(i,j,k, -1, 0, 1)
 
                   v_at_w_min  = 0.25 * (v0(i-1,j,k)+v0(i-1,j,k+1)+v0(i-1,j+1,k)+v0(i-1,j+1,k+1) )
                   v_at_w_plus = 0.25 * (v0(i  ,j,k)+v0(i  ,j,k+1)+v0(i  ,j+1,k)+v0(i  ,j+1,k+1) )
                   call log_wallaw(w0(i-1,j,k+1),v_at_w_min ,Cm_xwall,tau_wu_min)
                   call log_wallaw(w0(i  ,j,k+1),v_at_w_plus,Cm_xwall,tau_wu_plus)
-                  tempwp(i-1,j,k+1) = tempwp(i-1,j,k+1) - 0.5 * emom * ((w0(i,j,k+1)-w0(i-1,j,k+1))/dx)/dx - 0.5 * tau_wu_min/dx
-                  tempwp(i  ,j,k+1) = tempwp(i,j,k+1)   + 0.5 * emom * ((w0(i,j,k+1)-w0(i-1,j,k+1))/dx)/dx - 0.5 * tau_wu_plus /dx
+                  tempwp(i-1,j,k+1) = tempwp(i-1,j,k+1) - 0.5 * emom * (w0(i,j,k+1)-w0(i-1,j,k+1))*dx2i - 0.5 * tau_wu_min*dxi
+                  tempwp(i  ,j,k+1) = tempwp(i,j,k+1)   + 0.5 * emom * (w0(i,j,k+1)-w0(i-1,j,k+1))*dx2i - 0.5 * tau_wu_plus *dxi
 
 
                   call xwallscalar(i,j,k,thl0,tempthlp)  ! zero subgrid flux through the boundary is applied here by subtraction
@@ -492,47 +488,43 @@ contains
                endif
 
                if (lnorm_y(i,j,k)) then     !< Wall in y-direction
-                  emmo = 0.25  * ( &
-                     ekm(i,j,k)+ekm(i,j-1,k)+ekm(i-1,j-1,k)+ekm(i-1,j,k)  )
+                  emmo = calc_midpoint_ekm(i,j,k, -1, -1, 0)
 
                   w_at_u_min  = 0.25*(w0(i,j-1,k)+w0(i,j-1,k+1)+w0(i-1,j-1,k)+w0(i-1,j-1,k+1))
                   w_at_u_plus = 0.25*(w0(i,j  ,k)+w0(i,j  ,k+1)+w0(i-1,j  ,k)+w0(i-1,j  ,k+1))
                   call log_wallaw(u0(i,j-1,k),w_at_u_min ,Cm_ywall,tau_uv_min)
                   call log_wallaw(u0(i,j  ,k),w_at_u_plus,Cm_ywall,tau_uv_plus)
-                  tempup(i,j-1,k) = tempup(i,j-1,k) - 0.5 * emmo * ((u0(i,j,k)-u0(i,j-1,k))/dy)/dy - 0.5 * tau_uv_min/dy
-                  tempup(i,j  ,k) = tempup(i,j,k)   + 0.5 * emmo * ((u0(i,j,k)-u0(i,j-1,k))/dy)/dy - 0.5 * tau_uv_plus/dy
+                  tempup(i,j-1,k) = tempup(i,j-1,k) - 0.5 * emmo * (u0(i,j,k)-u0(i,j-1,k))*dy2i - 0.5 * tau_uv_min*dyi
+                  tempup(i,j  ,k) = tempup(i,j,k)   + 0.5 * emmo * (u0(i,j,k)-u0(i,j-1,k))*dy2i - 0.5 * tau_uv_plus*dyi
 
 
-                  epmo = 0.25  * ( &
-                     ekm(i+1,j,k)+ekm(i+1,j-1,k)+ekm(i,j-1,k)+ekm(i,j,k)  )
+                  epmo =  calc_midpoint_ekm(i,j,k, 1, -1, 0)
 
                   w_at_u_min  = 0.25*(w0(i+1,j-1,k)+w0(i+1,j-1,k+1)+w0(i,j-1,k)+w0(i,j-1,k+1))
                   w_at_u_plus = 0.25*(w0(i+1,j  ,k)+w0(i+1,j  ,k+1)+w0(i,j  ,k)+w0(i,j  ,k+1))
                   call log_wallaw(u0(i+1,j-1,k),w_at_u_min ,Cm_ywall,tau_uv_min)
                   call log_wallaw(u0(i+1,j  ,k),w_at_u_plus,Cm_ywall,tau_uv_plus)
 
-                  tempup(i+1,j-1,k) = tempup(i+1,j-1,k) - 0.5 * epmo * ((u0(i+1,j,k)-u0(i+1,j-1,k))/dy)/dy - 0.5 * tau_uv_min/dy
-                  tempup(i+1,j,k)   = tempup(i+1,j,k)   + 0.5 * epmo * ((u0(i+1,j,k)-u0(i+1,j-1,k))/dy)/dy - 0.5 * tau_uv_plus/dy
+                  tempup(i+1,j-1,k) = tempup(i+1,j-1,k) - 0.5 * epmo * (u0(i+1,j,k)-u0(i+1,j-1,k))*dy2i - 0.5 * tau_uv_min*dyi
+                  tempup(i+1,j,k)   = tempup(i+1,j,k)   + 0.5 * epmo * (u0(i+1,j,k)-u0(i+1,j-1,k))*dy2i - 0.5 * tau_uv_plus*dyi
 
-                  eomm = ( dzf(k-1) * ( ekm(i,j,k)  + ekm(i,j-1,k)  )  + &
-                     dzf(k) * ( ekm(i,j,k-1) + ekm(i,j-1,k-1) ) ) / ( 4.  * dzh(k) )
+                  eomm =  calc_midpoint_ekm(i,j,k, 0, -1, -1)
 
                   u_at_w_min  = 0.25 * (u0(i,j-1,k-1)+v0(i,j-1,k)+u0(i+1,j-1,k-1)+u0(i+1,j-1,k) )
                   u_at_w_plus = 0.25 * (u0(i,j  ,k-1)+u0(i,j  ,k)+u0(i+1,j  ,k-1)+u0(i+1,j  ,k) )
                   call log_wallaw(w0(i,j-1,k),u_at_w_min ,Cm_ywall,tau_wv_min)
                   call log_wallaw(w0(i,j  ,k),u_at_w_plus,Cm_ywall,tau_wv_plus)
-                  tempwp(i,j-1,k) = tempwp(i,j-1,k) - 0.5 * eomm * ((w0(i,j,k)-w0(i,j-1,k))/dy)/dy - 0.5 * tau_wv_min/dy
-                  tempwp(i,j,k)   = tempwp(i,j,k)   + 0.5 * eomm * ((w0(i,j,k)-w0(i,j-1,k))/dy)/dy - 0.5 * tau_wv_plus/dy
+                  tempwp(i,j-1,k) = tempwp(i,j-1,k) - 0.5 * eomm * (w0(i,j,k)-w0(i,j-1,k))*dy2i - 0.5 * tau_wv_min*dyi
+                  tempwp(i,j,k)   = tempwp(i,j,k)   + 0.5 * eomm * (w0(i,j,k)-w0(i,j-1,k))*dy2i - 0.5 * tau_wv_plus*dyi
 
-                  eomp = ( dzf(k) * ( ekm(i,j,k+1)  + ekm(i,j-1,k+1)  )  + &
-                     dzf(k+1) * ( ekm(i,j,k) + ekm(i,j-1,k) ) ) / ( 4.  * dzh(k+1) )
+                  eomp = calc_midpoint_ekm(i,j,k, 0, -1, 1)
 
                   u_at_w_min  = 0.25 * (u0(i,j-1,k)+v0(i,j-1,k+1)+u0(i+1,j-1,k)+u0(i+1,j-1,k+1) )
                   u_at_w_plus = 0.25 * (u0(i,j  ,k)+u0(i,j  ,k+1)+u0(i+1,j  ,k)+u0(i+1,j  ,k+1) )
                   call log_wallaw(w0(i,j-1,k+1),u_at_w_min ,Cm_ywall,tau_wv_min)
                   call log_wallaw(w0(i,j  ,k+1),u_at_w_plus,Cm_ywall,tau_wv_plus)
-                  tempwp(i,j-1,k+1) = tempwp(i,j-1,k+1) - 0.5 * eomm * ((w0(i,j,k+1)-w0(i,j-1,k+1))/dy)/dy - 0.5 * tau_wv_min/dy
-                  tempwp(i,j  ,k+1) = tempwp(i,j  ,k+1) + 0.5 * eomm * ((w0(i,j,k+1)-w0(i,j-1,k+1))/dy)/dy - 0.5 * tau_wv_plus/dy
+                  tempwp(i,j-1,k+1) = tempwp(i,j-1,k+1) - 0.5 * eomm * (w0(i,j,k+1)-w0(i,j-1,k+1))*dy2i - 0.5 * tau_wv_min*dyi
+                  tempwp(i,j  ,k+1) = tempwp(i,j  ,k+1) + 0.5 * eomm * (w0(i,j,k+1)-w0(i,j-1,k+1))*dy2i - 0.5 * tau_wv_plus*dyi
 
                   call ywallscalar(i,j,k,thl0,tempthlp)
                   call ywallscalar(i,j,k,qt0 ,tempqtp)
@@ -557,25 +549,23 @@ contains
          do j=2,j1
             k=1
             if (lnorm_x(i,j,1)) then     !< Wall in x-direction
-               emmo = 0.25  * ( &
-                  ekm(i,j,1)+ekm(i,j-1,1)+ekm(i-1,j-1,1)+ekm(i-1,j,1)  )
+               emmo = calc_midpoint_ekm(i,j,k, -1, -1, 0)
 
                w_at_v_min  = 0.25*(w0(i-1,j,k+1)+w0(i-1,j-1,k+1))  !w (k=1) = 0
                w_at_v_plus = 0.25*(w0(i  ,j,k+1)+w0(i  ,j-1,k+1))
                call log_wallaw(v0(i-1,j,k),w_at_v_min ,Cm_xwall,tau_vu_min)
                call log_wallaw(v0(i,j,k)  ,w_at_v_plus,Cm_xwall,tau_vu_plus)
-               tempvp(i-1,j,k) = tempvp(i-1,j,k) - 0.5 * emmo*((v0(i,j,k)-v0(i-1,j,k))/dx) / dx - 0.5 * tau_vu_min /dx
-               tempvp(i  ,j,k) = tempvp(i  ,j,k) + 0.5 * emmo*((v0(i,j,k)-v0(i-1,j,k))/dx) / dx - 0.5 * tau_vu_plus/dx
+               tempvp(i-1,j,k) = tempvp(i-1,j,k) - 0.5 * emmo*(v0(i,j,k)-v0(i-1,j,k))*dx2i - 0.5 * tau_vu_min *dxi
+               tempvp(i  ,j,k) = tempvp(i  ,j,k) + 0.5 * emmo*(v0(i,j,k)-v0(i-1,j,k))*dx2i - 0.5 * tau_vu_plus*dxi
 
-               empo = 0.25  * ( &
-                  ekm(i,j+1,1)+ekm(i,j,1)+ekm(i-1,j,1)+ekm(i-1,j+1,1)  )
+               empo = calc_midpoint_ekm(i,j,k, -1, 1, 0)
 
                w_at_v_min  = 0.25*(w0(i-1,j+1,k+1)+w0(i-1,j,k+1))
                w_at_v_plus = 0.25*(w0(i  ,j+1,k+1)+w0(i  ,j,k+1))
                call log_wallaw(v0(i-1,j+1,k),w_at_v_min ,Cm_xwall,tau_vu_min)
                call log_wallaw(v0(i,j+1,k)  ,w_at_v_plus,Cm_xwall,tau_vu_plus)
-               tempvp(i-1,j+1,k) = tempvp(i-1,j+1,k) - 0.5 * empo*((v0(i,j+1,k)-v0(i-1,j+1,k))/dx) / dx - 0.5 * tau_vu_min/dx
-               tempvp(i  ,j+1,k) = tempvp(i,j+1,k)   + 0.5 * empo*((v0(i,j+1,k)-v0(i-1,j+1,k))/dx) / dx - 0.5 * tau_vu_plus  /dx
+               tempvp(i-1,j+1,k) = tempvp(i-1,j+1,k) - 0.5 * empo*(v0(i,j+1,k)-v0(i-1,j+1,k))*dx2i - 0.5 * tau_vu_min*dxi
+               tempvp(i  ,j+1,k) = tempvp(i,j+1,k)   + 0.5 * empo*(v0(i,j+1,k)-v0(i-1,j+1,k))*dx2i - 0.5 * tau_vu_plus  *dxi
 
 
                call xwallscalar(i,j,1,thl0,tempthlp)
@@ -593,26 +583,24 @@ contains
             endif
 
             if (lnorm_y(i,j,1)) then     !< Wall in y-direction
-               emmo = 0.25  * ( &
-                  ekm(i,j,1)+ekm(i,j-1,1)+ekm(i-1,j-1,1)+ekm(i-1,j,1)  )
+               emmo = calc_midpoint_ekm(i,j,k, -1, -1, 0)
 
                w_at_u_min  = 0.25*(w0(i,j-1,k+1)+w0(i-1,j-1,k+1))
                w_at_u_plus = 0.25*(w0(i,j  ,k+1)+w0(i-1,j  ,k+1))
                call log_wallaw(u0(i,j-1,k),w_at_u_min ,Cm_ywall,tau_uv_min)
                call log_wallaw(u0(i,j  ,k),w_at_u_plus,Cm_ywall,tau_uv_plus)
-               tempup(i,j-1,k) = tempup(i,j-1,k) - 0.5 * emmo * ((u0(i,j,k)-u0(i,j-1,k))/dy)/dy - 0.5 * tau_uv_min/dy
-               tempup(i,j  ,k) = tempup(i,j,k)   + 0.5 * emmo * ((u0(i,j,k)-u0(i,j-1,k))/dy)/dy - 0.5 * tau_uv_plus/dy
+               tempup(i,j-1,k) = tempup(i,j-1,k) - 0.5 * emmo * (u0(i,j,k)-u0(i,j-1,k))*dy2i - 0.5 * tau_uv_min*dyi
+               tempup(i,j  ,k) = tempup(i,j,k)   + 0.5 * emmo * (u0(i,j,k)-u0(i,j-1,k))*dy2i - 0.5 * tau_uv_plus*dyi
 
-               epmo = 0.25  * ( &
-                  ekm(i+1,j,1)+ekm(i+1,j-1,1)+ekm(i,j-1,1)+ekm(i,j,1)  )
+               epmo = calc_midpoint_ekm(i,j,k, 1, -1, 0)
 
                w_at_u_min  = 0.25*(w0(i+1,j-1,k+1)+w0(i,j-1,k+1))
                w_at_u_plus = 0.25*(w0(i+1,j  ,k+1)+w0(i,j  ,k+1))
                call log_wallaw(u0(i+1,j-1,k),w_at_u_min ,Cm_ywall,tau_uv_min)
                call log_wallaw(u0(i+1,j  ,k),w_at_u_plus,Cm_ywall,tau_uv_plus)
 
-               tempup(i+1,j-1,k) = tempup(i+1,j-1,k) - 0.5 * epmo * ((u0(i+1,j,k)-u0(i+1,j-1,k))/dy)/dy - 0.5 * tau_uv_min/dy
-               tempup(i+1,j,k)   = tempup(i+1,j,k)   + 0.5 * epmo * ((u0(i+1,j,k)-u0(i+1,j-1,k))/dy)/dy - 0.5 * tau_uv_plus/dy
+               tempup(i+1,j-1,k) = tempup(i+1,j-1,k) - 0.5 * epmo * (u0(i+1,j,k)-u0(i+1,j-1,k))*dy2i - 0.5 * tau_uv_min*dyi
+               tempup(i+1,j,k)   = tempup(i+1,j,k)   + 0.5 * epmo * (u0(i+1,j,k)-u0(i+1,j-1,k))*dy2i - 0.5 * tau_uv_plus*dyi
 
 
                call ywallscalar(i,j,1,thl0,tempthlp)
@@ -640,12 +628,14 @@ contains
                   up(i,j,k)=-u0(i,j,k)*rk3coefi
                   vp(i,j,k)=-v0(i,j,k)*rk3coefi
                   wp(i,j,k)=-w0(i,j,k)*rk3coefi
-                  thlp(i,j,k)=(thl0av(k)-thlm(i,j,k))*rk3coefi
+                  thlp(i,j,k)=(thlibm-thlm(i,j,k))*rk3coefi
+                  ! thlp(i,j,k)=(thl0av(k)-thlm(i,j,k))*rk3coefi
                   if(isnan(thlp(i,j,k))) then
                      write(6,*) 'positie ijk', i,j,k
                      stop 'tendency ging nan' ! SvdL, added for testiing
                   endif
-                  qtp (i,j,k)=(qt0av(k) -qtm(i,j,k))*rk3coefi
+                  qtp (i,j,k)=(qtibm -qtm(i,j,k))*rk3coefi
+                  ! qtp (i,j,k)=(qt0av(k) -qtm(i,j,k))*rk3coefi
                   e12p(i,j,k)=(e12min-e12m(i,j,k))*rk3coefi
                   do nc=1,nsv
                      svp(i,j,k,nc) = - sv0(i,j,k,nc)*rk3coefi
