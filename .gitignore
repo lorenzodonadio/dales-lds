@@ -2,3 +2,4 @@
 src/modversion.f90
 *~
 build/*
+src/*.mod

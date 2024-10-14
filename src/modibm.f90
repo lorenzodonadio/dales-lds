@@ -388,6 +388,7 @@ contains
       use modglobal,      only : rk3step,   kmax, i1, j1, k1, ih, jh, rdt, timee, dx, dy, dzh, dzf, nsv, e12min, dx2i ,dy2i,dxi,dyi
       !< dy2i =   (1/dx)**2
       ! real :: dy2i            !<  (1dy)**2
+      use modsubgrid, only: calc_midpoint_ekm
       use modsubgriddata, only : ekm!, lsmagorinsky ! (SvdL, 16-05-2023:) added switch for use of Smagorinsky closure
       use modmpi,         only : excjs
       !clater use modnudgeboundary, only : Nsim
