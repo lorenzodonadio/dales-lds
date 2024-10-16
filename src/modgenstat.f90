@@ -440,17 +440,18 @@ contains
     implicit none
     if (.not. lstat) return
     if (rk3step/=3) return
-
     if(timee<tnext .and. timee<tnextwrite) then
       dt_lim = minval((/dt_lim,tnext-timee,tnextwrite-timee/))
       return
     end if
     if (timee>=tnext) then
       tnext = tnext+idtav
+      print * , "genstat running"
       call do_genstat
     end if
     if (timee>=tnextwrite) then
       tnextwrite = tnextwrite+itimeav
+      print * , "genstat writing"
       call writestat
     end if
     dt_lim = minval((/dt_lim,tnext-timee,tnextwrite-timee/))
@@ -1358,8 +1359,6 @@ contains
             wqtrmn   (k)                              , &
             wqttmn   (k),&
              k=1,kmax)
-
-
 
       close(ifoutput)
 

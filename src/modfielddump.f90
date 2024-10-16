@@ -112,14 +112,20 @@ contains
     if (ncoarse==-1) then
       ncoarse = 1
     end if
-    idtav = dtav/tres
-    itmin = tmin/tres
-    itmax = tmax/tres
+
+    idtav = dtav
+    itmin = tmin
+    itmax = tmax
+    ! idtav = dtav/tres
+    ! itmin = tmin/tres
+    ! itmax = tmax/tres
 
     tnext      = idtav   +btime
     if(.not.(lfielddump)) return
     dt_lim = min(dt_lim,tnext)
-
+    write(*,*) "FIELDUMP INIT: dtlim:",dt_lim
+    write(*,*) "dtav:",dtav ," - idtav: ",idtav, "- tnext: ",tnext
+    
     if (.not. ladaptive .and. abs(dtav/dtmax-nint(dtav/dtmax))>1e-4) then
       stop 'dtav should be a integer multiple of dtmax'
     end if

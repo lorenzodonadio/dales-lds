@@ -44,11 +44,11 @@ contains
       itimeav = timeav / tres
       tnextwrite = itimeav + btime
       if(.not. lstat) return
-
+      
       fname(15:17) = cexpnr  ! Update filename with experiment number
       allocate(ncname(nvar, 4))  ! Only 10 variables to allocate
       call nctiminfo(tncname(1,:))
-
+      
       ! Define the variables to be written
       call ncinfo(ncname( 1,:),'rhof','Full level slab averaged density','kg/m^3','tt')
       call ncinfo(ncname( 2,:),'rhobf','Full level base-state density','kg/m^3','tt')
@@ -60,7 +60,7 @@ contains
       ! call ncinfo(ncname( 8,:),'thv','Virtual potential temperature','K','tt')
       ! call ncinfo(ncname( 9,:),'qt','Total water specific humidity','kg/kg','tt')
       ! call ncinfo(ncname(10,:),'ql','Liquid water specific humidity','kg/kg','tt')
-
+      
       ! Open the NetCDF file and write initial dimensions
       call open_nc(fname, ncid, nrec, n3=kmax)
       if (nrec == 0) then
@@ -68,6 +68,7 @@ contains
         call writestat_dims_nc(ncid)
       end if
       call define_nc(ncid, nvar, ncname)
+      write(*,*) 'Initialized succesfully netcdf genstatlite', fname, ncid
     end if
   end subroutine initgenstat_lite
 
@@ -87,7 +88,8 @@ contains
 
       if (timee>=tnextwrite) then
         tnextwrite = tnextwrite+itimeav
-
+        write(*,*) 'Attempt to write to', ncid
+        
         vars(:, 1) = rhof
         vars(:, 2) = rhobf
         vars(:, 3) = rhobh
@@ -99,9 +101,11 @@ contains
         ! vars(:, 9) = qtmn
         ! vars(:,10) = qlmn
         
+        write(*,*) Time:", ncid, 1, tncname, (/rtimee/), nrec
         ! Write the time information to NetCDF
         call writestat_nc(ncid, 1, tncname, (/rtimee/), nrec, .true.)
-
+        
+        write(*,*) Vars:", ncid, nvar, ncname, vars(1:kmax,:), nrec, kmax
         ! Write the slab-averaged variables to NetCDF
         call writestat_nc(ncid, nvar, ncname, vars(1:kmax,:), nrec, kmax)
       end if
