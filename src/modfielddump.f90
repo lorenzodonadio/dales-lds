@@ -54,9 +54,12 @@ save
   logical :: lthl = .true.       !< switch for saving the thl field
   logical :: lbuoy = .true.      !< switch for saving the buoy field
   logical :: lsv(100) = .true.   !< switches for saving the sv fields
+  logical :: lekh = .false.      !< switch for saving the ekh field
+  logical :: lekm = .false.      !< switch for saving the ekh field
 
   ! indices for the variables in the netCDF vars array
   integer :: ind, ind_u=-1, ind_v=-1, ind_w=-1, ind_qt=-1, ind_ql=-1, ind_thl=-1, ind_buoy=-1, ind_sv(100)=-1
+  integer :: ind_ekh=-1,ind_ekm=-1
 contains
 !> Initializing fielddump. Read out the namelist, initializing the variables
   subroutine initfielddump
@@ -124,7 +127,8 @@ contains
     if (lnetcdf) then
       write(fname,'(A,i3.3,A,i3.3,A)') 'fielddump.', myidx, '.', myidy, '.xxx.nc'
       fname(19:21) = cexpnr
-      nvar = 7+nsv ! maximum number of variables
+      ! nvar = 7+nsv ! maximum number of variables
+      nvar = 8+nsv ! maximum number of variables
       allocate(ncname(nvar,4))
       call nctiminfo(tncname(1,:))
       ind = 1
@@ -163,6 +167,12 @@ contains
          ind = ind + 1
          call ncinfo(ncname(ind_buoy,:),'buoy','Buoyancy','K','tttt')
       end if
+      !
+      if (lekh) then
+         ind_ekh = ind
+         ind = ind + 1
+         call ncinfo(ncname(ind_ekh,:),'ekh','Eddy diffusivity Kh coefficient','m*2/s','tttt')
+      end if
 
       do n=1,nsv
         if (lsv(n)) then
@@ -198,6 +208,7 @@ contains
     use modmpi,    only : myid,cmyidx, cmyidy
     use modstat_nc, only : lnetcdf, writestat_nc
     use modmicrodata, only : iqr, imicro, imicro_none
+    use modsubgriddata, only : ekh, ekm
     implicit none
 
     integer(KIND=selected_int_kind(4)), allocatable :: field(:,:,:)
@@ -355,6 +366,9 @@ contains
       end if
       close (ifoutput)
     endif
+    
+    ! EKH
+    if (lnetcdf .and. lekh) vars(:,:,:,ind_ekh) = ekh(2:i1:ncoarse,2:j1:ncoarse,klow:khigh)
 
     ! scalar variables
     if (lnetcdf) then

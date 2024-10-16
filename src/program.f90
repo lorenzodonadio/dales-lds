@@ -125,6 +125,8 @@ program DALES
   !use modspectra2,     only : dospecs,initspectra2,tanhfilter
   use modtimestat,     only : inittimestat, timestat, exittimestat
   use modgenstat,      only : initgenstat, genstat, exitgenstat
+  ! one of the two should be on or off, gen stat and gen stat lite from namespace
+  use modgenstat_lite,      only : initgenstat_lite, writestat_lite, exitgenstat_lite
   use modradstat,      only : initradstat ,radstat, exitradstat
   use modlsmstat,      only : initlsmstat ,lsmstat, exitlsmstat
   use modsampling,     only : initsampling, sampling,exitsampling
@@ -180,6 +182,7 @@ program DALES
   call initstat_nc   ! Should be called before stat-routines that might do netCDF
   call inittimestat  ! Timestat must preceed all other timeseries that could write in the same netCDF file (unless stated otherwise
   call initgenstat   ! Genstat must preceed all other statistics that could write in the same netCDF file (unless stated otherwise
+  call initgenstat_lite
   !call inittilt
   call initsampling
   call initquadrant
@@ -272,13 +275,13 @@ program DALES
 
    ! write(6,*) 'before pois'
 
-  do i=2,i1
-  do j=2,j1
-  do k=1,k1
-   !  write (6,*) i,j,k,libm(i,j,k),um(i,j,k),vm(i,j,k),wm(i,j,k),thlm(i,j,k),qtm(i,j,k),e12m(i,j,k)
-  enddo
-  enddo
-  enddo
+  ! do i=2,i1
+  ! do j=2,j1
+  ! do k=1,k1
+  !  !  write (6,*) i,j,k,libm(i,j,k),um(i,j,k),vm(i,j,k),wm(i,j,k),thlm(i,j,k),qtm(i,j,k),e12m(i,j,k)
+  ! enddo
+  ! enddo
+  ! enddo
 
     !< MK: Ordering of the Poisson Solver and the IBM, (lpoislast==.true.): 
            !IBM -> Pois, (lpoislast==.false.): zerowallvelocity -> Pois -> IBM
@@ -313,6 +316,7 @@ program DALES
     call checksim
     call timestat  !Timestat must preceed all other timeseries that could write in the same netCDF file (unless stated otherwise
     call genstat  !Genstat must preceed all other statistics that could write in the same netCDF file (unless stated otherwise
+    call writestat_lite
     call radstat
     call lsmstat
     call sampling
@@ -348,6 +352,7 @@ program DALES
 !    4    FINALIZE ADD ONS AND THE MAIN PROGRAM
 !-------------------------------------------------------
   call exitgenstat
+  call exitgenstat_lite
   call exitradstat
   call exitlsmstat
   !call exitparticles
