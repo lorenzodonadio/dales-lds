@@ -113,12 +113,9 @@ contains
       ncoarse = 1
     end if
 
-    idtav = dtav
-    itmin = tmin
-    itmax = tmax
-    ! idtav = dtav/tres
-    ! itmin = tmin/tres
-    ! itmax = tmax/tres
+    idtav = dtav/tres
+    itmin = tmin/tres
+    itmax = tmax/tres
 
     tnext      = idtav   +btime
     if(.not.(lfielddump)) return
