@@ -75,7 +75,7 @@ contains
     character(3) :: csvname
     namelist/NAMFIELDDUMP/ &
          dtav,lfielddump,ldiracc,lbinary,klow,khigh,ncoarse, tmin, tmax,&
-         lu, lv, lw, lqt, lql, lthl, lbuoy, lsv, qrminout
+         lu, lv, lw, lqt, lql, lthl, lbuoy, lsv,lekh, lekm, qrminout
 
     dtav=dtav_glob
     klow=1
