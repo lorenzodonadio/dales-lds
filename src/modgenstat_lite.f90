@@ -101,11 +101,11 @@ contains
         ! vars(:, 9) = qtmn
         ! vars(:,10) = qlmn
         
-        write(*,*) Time:", ncid, 1, tncname, (/rtimee/), nrec
+        write(*,*) "Time:", ncid, 1, tncname, (/rtimee/), nrec
         ! Write the time information to NetCDF
         call writestat_nc(ncid, 1, tncname, (/rtimee/), nrec, .true.)
         
-        write(*,*) Vars:", ncid, nvar, ncname, vars(1:kmax,:), nrec, kmax
+        write(*,*) "Vars:", ncid, nvar, ncname, vars(1:kmax,:), nrec, kmax
         ! Write the slab-averaged variables to NetCDF
         call writestat_nc(ncid, nvar, ncname, vars(1:kmax,:), nrec, kmax)
       end if
