@@ -90,6 +90,7 @@ contains
       write(6 ,NAMFIELDDUMP)
       close(ifnamopt)
     end if
+
     call D_MPI_BCAST(ncoarse     ,1,0,comm3d,ierr)
     call D_MPI_BCAST(klow        ,1,0,comm3d,ierr)
     call D_MPI_BCAST(khigh       ,1,0,comm3d,ierr)
@@ -106,6 +107,8 @@ contains
     call D_MPI_BCAST(lql         ,1,0,comm3d,ierr)
     call D_MPI_BCAST(lthl        ,1,0,comm3d,ierr)
     call D_MPI_BCAST(lbuoy       ,1,0,comm3d,ierr)
+    call D_MPI_BCAST(lekh        ,1,0,comm3d,ierr)
+    call D_MPI_BCAST(lekm        ,1,0,comm3d,ierr)
     call D_MPI_BCAST(lsv       ,100,0,comm3d,ierr)
     call D_MPI_BCAST(qrminout    ,1,0,comm3d,ierr)
 
