@@ -382,7 +382,7 @@ contains
                             dvdtls,dvdxls,dvdyls, &
                             dpdxl,dpdyl
 
-    use modglobal,   only : rtimee,om23_gs,dzf,dzh,k1,kmax,llsadv
+    use modglobal,   only : rtimee,om23,dzf,dzh,k1,kmax,llsadv
 
     use modmpi,      only : myid
 
@@ -415,8 +415,8 @@ contains
 
 
     do k=1,kmax
-      dpdxl(k) =  om23_gs*vg(k)
-      dpdyl(k) = -om23_gs*ug(k)
+      dpdxl(k) =  om23*vg(k)
+      dpdyl(k) = -om23*ug(k)
     end do
 
     whls(1)  = 0.0

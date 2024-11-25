@@ -2300,7 +2300,7 @@ od_lo	src/rrsw_tbl.f90	/^      real(kind=rb), parameter :: od_lo /;"	v	module:rr
 om22	src/modglobal.f90	/^      real    :: om22 /;"	v	module:modglobal
 om22_gs	src/modglobal.f90	/^      real    :: om22_gs /;"	v	module:modglobal
 om23	src/modglobal.f90	/^      real    :: om23 /;"	v	module:modglobal
-om23_gs	src/modglobal.f90	/^      real    :: om23_gs /;"	v	module:modglobal
+om23	src/modglobal.f90	/^      real    :: om23 /;"	v	module:modglobal
 oneminus	src/rrlw_con.f90	/^      real(kind=rb) :: oneminus,/;"	v	module:rrlw_con
 oneminus	src/rrsw_con.f90	/^      real(kind=rb) :: oneminus,/;"	v	module:rrsw_con
 open_nc	src/modstat_nc.f90	/^  subroutine open_nc /;"	s	module:modstat_nc

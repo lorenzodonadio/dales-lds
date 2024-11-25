@@ -67,7 +67,7 @@ contains
 
       use modglobal,         only : version,initglobal,iexpnr, ltotruntime, runtime, dtmax, dtav_glob,timeav_glob,&
          lwarmstart,startfile,trestart,&
-         nsv,itot,jtot,kmax,xsize,ysize,xlat,xlon,xyear,xday,xtime,xyrot&
+         nsv,itot,jtot,kmax,xsize,ysize,xlat,xlon,xyear,xday,xtime,xyrot,&
          lmoist,lcoriol,lpressgrad,igrw_damp,geodamptime,lmomsubs,cu, cv,ifnamopt,fname_options,llsadv,&
          ibas_prf,lambda_crit,iadv_mom,iadv_tke,iadv_thl,iadv_qt,iadv_sv,courant,peclet,ladaptive,author,lnoclouds,lrigidlid,unudge,ntimedep, &
          solver_id, maxiter, tolerance, n_pre, n_post, precond, checknamelisterror, &
@@ -418,7 +418,7 @@ contains
       !cstep isv_loc,jsv_loc,ksv_loc,svtend_loc,nsv_loc,nsv_glob_nr !cibm , cstep local emissions
       use modglobal,         only : i1,i2,ih,j1,j2,jh,kmax,k1,dtmax,idtmax,dt,rdt,runtime,timeleft,tres,&
          rtimee,timee,ntrun,btime,dt_lim,nsv,&
-         zf,dzf,dzh,rv,rd,cp,rlv,pref0,om23_gs,&
+         zf,dzf,dzh,rv,rd,cp,rlv,pref0,om23,&
          ijtot,cu,cv,e12min,dzh,cexpnr,ifinput,lwarmstart,ltotruntime,itrestart,&
          trestart, ladaptive,llsadv,tnextrestart,longint,&
          imax,jmax,& !cibm cstep  local emissions
@@ -914,8 +914,8 @@ contains
 !******include rho if rho = rho(z) /= 1.0 ***********
 
       do k=1,kmax
-         dpdxl(k) =  om23_gs*vg(k)
-         dpdyl(k) = -om23_gs*ug(k)
+         dpdxl(k) =  om23*vg(k)
+         dpdyl(k) = -om23*ug(k)
       end do
 
       !-----------------------------------------------------------------
