@@ -96,10 +96,11 @@ save
 
       integer :: igrw_damp = 2 !< switch to enable gravity wave damping
       real    :: geodamptime = 7200. !< time scale for nudging to geowind in sponge layer, prevents oscillations
-      real    :: om22                       !<    *2.*omega_earth*cos(lat)
-      real    :: om23                       !<    *2.*omega_earth*sin(lat)
-      real    :: om22_gs                       !<    *2.*omega_earth*cos(lat)
-      real    :: om23_gs                       !<    *2.*omega_earth*sin(lat)
+        !   Coriolis Parameters om2 is 2*Omega (earths rotation vector), projected into the correct reference frame
+      real    :: xyrot   = 0.               !<    angle of rotation of the xy plane, 0 (default) means x is aligned with eastwest and y with northsouth
+      real    :: om21                       !<    -2*Omega*cos(lat)*sin(xyrot)
+      real    :: om22                       !<     2*Omega*cos(lat)*cos(xyrot)
+      real    :: om23                       !<     2*Omega*sin(lat)
       real    :: xlat    = 52.              !<    *latitude  in degrees.
       real    :: xlon    = 0.               !<    *longitude in degrees.
       logical :: lrigidlid = .false. !< switch to enable simulations with a rigid lid
@@ -232,7 +233,7 @@ contains
     implicit none
 
     integer :: advarr(4)
-    real phi, colat, silat, omega, omega_gs
+    real phi,theta, omega
     integer :: k, n, m, ierr
     character(80) chmess
 
@@ -354,21 +355,24 @@ contains
       end if
     end do
 
-    phi    = xlat*pi/180.
-    colat  = cos(phi)
-    silat  = sin(phi)
+    ! Coriolis modified by Lorenzo Donadio
+    phi = xlat*pi/180.
     if (lcoriol) then
       omega = 7.292e-5
-      omega_gs = 7.292e-5
     else
       omega = 0.
-      omega_gs = 0.
     end if
-    om22   = 2.*omega*colat
-    om23   = 2.*omega*silat
-    om22_gs   = 2.*omega_gs*colat
-    om23_gs   = 2.*omega_gs*silat
 
+    if (abs(xyrot) > 0.1) then
+        theta = xyrot*pi/180
+        om21   = -2.*omega*cos(phi)*sin(theta)
+        om22   = 2.*omega*cos(phi)*cos(theta)
+        om23   = 2.*omega*sin(phi)
+    else
+        om21   = 0. 
+        om22   = 2.*omega*cos(phi)
+        om23   = 2.*omega*sin(phi)
+    endif
     ! Variables
     allocate(dsv(nsv))
     write(cexpnr,'(i3.3)') iexpnr

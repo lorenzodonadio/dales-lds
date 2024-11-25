@@ -98,76 +98,133 @@ contains
 
 !-----------------------------------------------------------------|
 !                                                                 |
-!      Thijs Heus TU Delft                                        |
+!      Thijs Heus TU Delft 
+!      Modified by Lorenzo Donadio Nov 2024                       |
 !                                                                 |
 !     purpose.                                                    |
 !     --------                                                    |
 !                                                                 |
-!      Calculates the Coriolis force.                             |
-!                                                                 |
+!      Calculates the Coriolis force.  
+!      F = -2 Omega X V  
+!      Handles rotated xy plane                                   |
 !**   interface.                                                  |
 !     ----------                                                  |
 !                                                                 |
-!     *coriolis* is called from *program*.                          |
-!                                                                 |
+!     *coriolis* is called from *program*.                        |
+!                                                                  |
 !-----------------------------------------------------------------|
 
-  use modglobal, only : i1,j1,kmax,dzh,dzf,cu,cv,om22,om23,lcoriol
+  use modglobal, only : i1,j1,kmax,dzh,dzf,cu,cv,xyrot,om21,om22,om23,lcoriol
   use modfields, only : u0,v0,w0,up,vp,wp
   implicit none
 
-  integer i, j, k, jm, jp, km, kp
+  integer :: i, j, k, jm, jp, km,im,ip, kp
+  real :: u,v,w
 
   if (lcoriol .eqv. .false.) return
 
-  do k=2,kmax
-    kp=k+1
-    km=k-1
-  do j=2,j1
-    jp=j+1
-    jm=j-1
-  do i=2,i1
+  if (abs(xyrot)<0.1) then ! Original implementation without rotated domain om21 is zero
+    do k=2,kmax
+        kp=k+1
+        km=k-1
+        do j=2,j1
+            jp=j+1
+            jm=j-1
+            do i=2,i1
+                ip = i+1
+                im = i-1
 
-    up(i,j,k) = up(i,j,k)+ cv*om23 &
-          +(v0(i,j,k)+v0(i,jp,k)+v0(i-1,j,k)+v0(i-1,jp,k))*om23*0.25 &
-          -(w0(i,j,k)+w0(i,j,kp)+w0(i-1,j,kp)+w0(i-1,j,k))*om22*0.25
+                u = 0.25*(u0(i,j,k)+u0(i,jm,k)+u0(ip,jm,k)+u0(ip,j,k)) + cu
+                v = 0.25*(v0(i,j,k)+v0(i,jp,k)+v0(im,j,k)+v0(im,jp,k)) + cv
+                w = 0.25*(w0(i,j,k)+w0(i,j,kp)+w0(im,j,kp)+w0(im,j,k))
 
-    vp(i,j,k) = vp(i,j,k)  - cu*om23 &
-          -(u0(i,j,k)+u0(i,jm,k)+u0(i+1,jm,k)+u0(i+1,j,k))*om23*0.25
+                up(i,j,k) = up(i,j,k) + om23*v-om22*w
+                vp(i,j,k) = vp(i,j,k) + om23*u 
 
+                ! different interpolation for u,v at mid level for vertical velocity
+                u = 0.25 *((dzf(km)*(u0(i,j,k)+u0(ip,j,k)) + dzf(k)*(u0(i,j,km)+u0(ip,j,km)))/dzh(k)) + cu
 
-    wp(i,j,k) = wp(i,j,k) + cu*om22 +( (dzf(km) * (u0(i,j,k)  + u0(i+1,j,k) )    &
-                +    dzf(k)  * (u0(i,j,km) + u0(i+1,j,km))  ) / dzh(k) ) &
-                * om22*0.25
-  end do
-  end do
-!     -------------------------------------------end i&j-loop
-  end do
-!     -------------------------------------------end k-loop
+                wp(i,j,k) = wp(i,j,k) + om22*u
 
-!     --------------------------------------------
-!     special treatment for lowest full level: k=1
-!     --------------------------------------------
+            end do
+        end do
+    end do
 
-  do j=2,j1
-    jp = j+1
-    jm = j-1
-  do i=2,i1
+        !     --------------------------------------------
+        !     special treatment for lowest full level: k=1
+        !     --------------------------------------------
 
-    up(i,j,1) = up(i,j,1)  + cv*om23 &
-          +(v0(i,j,1)+v0(i,jp,1)+v0(i-1,j,1)+v0(i-1,jp,1))*om23*0.25 &
-          -(w0(i,j,1)+w0(i,j ,2)+w0(i-1,j,2)+w0(i-1,j ,1))*om22*0.25
+    do j=2,j1
+        jp = j+1
+        jm = j-1
+        do i=2,i1
+            k = 1
+            ip = i+1
+            im = i-1
 
-    vp(i,j,1) = vp(i,j,1) - cu*om23 &
-          -(u0(i,j,1)+u0(i,jm,1)+u0(i+1,jm,1)+u0(i+1,j,1))*om23*0.25
+            u = 0.25*(u0(i,j,k)+u0(i,jm,k)+u0(ip,jm,k)+u0(ip,j,k)) + cu
+            v = 0.25*(v0(i,j,k)+v0(i,jp,k)+v0(im,j,k)+v0(im,jp,k)) + cv
+            w = 0.25*(w0(i,j,k)+w0(i,j,kp)+w0(im,j,kp)+w0(im,j,k))
 
-    wp(i,j,1) = 0.0
+            up(i,j,k) = up(i,j,k) + om23*v-om22*w
+            vp(i,j,k) = vp(i,j,k) + om23*u 
 
-  end do
-  end do
-!     ----------------------------------------------end i,j-loop
+            wp(i,j,1) = 0.0
 
+        end do
+    end do
+    else ! Rotated implementation taking into account om21
+        do k=2,kmax
+            kp=k+1
+            km=k-1
+            do j=2,j1
+                jp=j+1
+                jm=j-1
+                do i=2,i1
+                    ip = i+1
+                    im = i-1
 
+                    u = 0.25*(u0(i,j,k)+u0(i,jm,k)+u0(ip,jm,k)+u0(ip,j,k)) + cu
+                    v = 0.25*(v0(i,j,k)+v0(i,jp,k)+v0(im,j,k)+v0(im,jp,k)) + cv
+                    w = 0.25*(w0(i,j,k)+w0(i,j,kp)+w0(im,j,kp)+w0(im,j,k))
+
+                    up(i,j,k) = up(i,j,k) + om23*v-om22*w
+                    vp(i,j,k) = vp(i,j,k) + om23*u-om21*w 
+
+                    ! different interpolation for u,v at mid level for vertical velocity
+                    u = 0.25 *((dzf(km)*(u0(i,j,k)+u0(ip,j,k)) + dzf(k)*(u0(i,j,km)+u0(ip,j,km)))/dzh(k)) + cu
+                    v = 0.25 *((dzf(km)*(v0(i,j,k)+v0(i,jp,k)) + dzf(k)*(v0(i,j,km)+v0(i,jp,km)))/dzh(k)) + cv
+
+                    wp(i,j,k) = wp(i,j,k) + om22*u-om21*v
+
+                end do
+            end do
+        end do
+
+            !     --------------------------------------------
+            !     special treatment for lowest full level: k=1
+            !     --------------------------------------------
+
+        do j=2,j1
+            jp = j+1
+            jm = j-1
+            do i=2,i1
+                k = 1
+                ip = i+1
+                im = i-1
+
+                u = 0.25*(u0(i,j,k)+u0(i,jm,k)+u0(ip,jm,k)+u0(ip,j,k)) + cu
+                v = 0.25*(v0(i,j,k)+v0(i,jp,k)+v0(im,j,k)+v0(im,jp,k)) + cv
+                w = 0.25*(w0(i,j,k)+w0(i,j,kp)+w0(im,j,kp)+w0(im,j,k))
+
+                up(i,j,k) = up(i,j,k) + om23*v-om22*w
+                vp(i,j,k) = vp(i,j,k) + om23*u-om21*w 
+
+                wp(i,j,1) = 0.0
+
+            end do
+        end do
+    endif
   return
   end subroutine coriolis
 
