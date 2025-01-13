@@ -191,9 +191,7 @@ program DALES
   call initlsmcrosssection
   !call initprojection
   call initcloudfield
-  write(*,*) "FIELDUMP INIT B4"
   call initfielddump
-  write(*,*) "FIELDUMP INIT AFTER"
   call initsamptend
   call initradstat
   call initradfield
