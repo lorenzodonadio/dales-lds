@@ -316,7 +316,7 @@ contains
       lnorm_y(:,:,:)=.false.
       lnorm_z(:,:,:)=.false.
 
-!cstep   else  !do for any lwall parameterization
+      !cstep   else  !do for any lwall parameterization
       !< Find normal layers in x-direction
       do k=1,kmax
          do j=2,j1
@@ -330,16 +330,13 @@ contains
                !cstep  libm      F     T      T     T      F
                !cstep  lnorm_x   F     T      F     F      T  , the true points refer to u-positions on the
                !                                                grid box (on its left)
-
                if (libm(i,j,k).neqv.libm(i-1,j,k)) then
                   lnorm_x(i,j,k)=.true.  !cstep a wall at position i with its normal pointing in the x-direction
                endif
-
                if (libm(i,j,k).neqv.libm(i,j-1,k)) then
                   lnorm_y(i,j,k)=.true.
                endif
-
-               if (libm(i,j,k).neqv.libm(i,j,k-1)) then
+               if (libm(i,j,k).neqv.libm(i,j,k+1)) then
                   lnorm_z(i,j,k)=.true.
                endif
             end do
