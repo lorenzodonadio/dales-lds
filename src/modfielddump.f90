@@ -239,20 +239,15 @@ contains
       use modsubgriddata, only : ekh, ekm
       implicit none
 
-      if (myid == 0) write(*,*) '### fielddump call',navg
-      
       if (.not. lfielddump) return
       if (rk3step/=3) return
       
-      if (myid == 0) write(*,*) 'Before addvarsnetcdf',navg
+      if (lnetcdf .and. lsavetimeavg) call addvarsnetcdf !This needs to be here!
       
-      if (lnetcdf .and. lsavetimeavg) call addvarsnetcdf
-      
-      if(timee<tnext) then
+      if(timee<tnext) then !Lorenzo Im not sure what this does, but it returns quite often 
          dt_lim = min(dt_lim,tnext-timee)
          return
       end if
-      if (myid == 0) write(*,*) 'Past the weird timee IF'
       
       tnext = tnext+idtav
       dt_lim = minval((/dt_lim,tnext-timee/))
@@ -264,8 +259,7 @@ contains
 
          if(lsavetimeavg) then
             !save time averages
-            write(*,*) "DEBUG before bcast? navg ", navg
-            write(*,*) "DEBUG Dividing vars by, navg: ", navg
+            if (myid == 0) write(*,*) "time average saved of ", navg, " timesteps"
             vars = vars/navg
 
          else
@@ -306,10 +300,8 @@ contains
       use modsubgriddata, only : ekh, ekm
       use modmpi,   only :myid
       integer k,n
-      if (myid == 0) write(*,*) 'DEBUG ADD 1 TO NAVG PROC 0',navg
       ! we added 1 to the numberof observations in `vars`
       navg = navg + 1
-      if (myid == 0) write(*,*) 'DEBUG NAVG AFTER 0',navg
 
       if (lu) vars(:,:,:,ind_u) = vars(:,:,:,ind_u) + u0(2:i1:ncoarse,2:j1:ncoarse,klow:khigh)
       if (lv) vars(:,:,:,ind_v) = vars(:,:,:,ind_v) + v0(2:i1:ncoarse,2:j1:ncoarse,klow:khigh)
