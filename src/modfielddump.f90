@@ -64,7 +64,7 @@ module modfielddump
 
    ! Variables to be saved, moved here to allow for time average
    real, allocatable :: vars(:,:,:,:)
-   integer :: navg = 0 !< number of snapshots in the average
+   integer, save :: navg = 0 !< number of snapshots in the average
 
 contains
 
@@ -249,13 +249,8 @@ contains
       tnext = tnext+idtav
       dt_lim = minval((/dt_lim,tnext-timee/))
       ! Add variables and increase navg coun
-      if (lnetcdf .and. lsavetimeavg) then
-         write(*,*) "DEBUG addvarsnetcdf before increment: ", navg
-         navg = navg + 1
-         write(*,*) "DEBUG addvarsnetcdf after increment: ", navg
-         call addvarsnetcdf
-      endif
-          ! Only write fields if time is in the range (tmin, tmax)
+      if (lnetcdf .and. lsavetimeavg) call addvarsnetcdf
+      ! Only write fields if time is in the range (tmin, tmax)
       if (timee < itmin .or. timee > itmax) return
 
       if(lnetcdf) then
@@ -267,8 +262,6 @@ contains
          else
             call allocatevars
             call addvarsnetcdf
-            write(*,*) "DEBUG set navg to 1 before increment: ", navg
-            navg = 1
          endif
          
          call writestat_nc(ncid,1,tncname,(/rtimee/),nrec,.true.)
@@ -305,7 +298,10 @@ contains
 
       integer k,n
       ! we added 1 to the numberof observations in `vars`
-      
+      write(*,*) "DEBUG addvarsnetcdf before increment: ", navg
+      navg = navg + 1
+      write(*,*) "DEBUG addvarsnetcdf after increment: ", navg
+
       if (lu) vars(:,:,:,ind_u) = vars(:,:,:,ind_u) + u0(2:i1:ncoarse,2:j1:ncoarse,klow:khigh)
       if (lv) vars(:,:,:,ind_v) = vars(:,:,:,ind_v) + v0(2:i1:ncoarse,2:j1:ncoarse,klow:khigh)
       if (lw) vars(:,:,:,ind_w) = vars(:,:,:,ind_w) + w0(2:i1:ncoarse,2:j1:ncoarse,klow:khigh)
