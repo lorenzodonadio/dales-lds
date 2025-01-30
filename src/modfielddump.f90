@@ -63,8 +63,8 @@ module modfielddump
    integer :: ind_ekh=-1,ind_ekm=-1
 
    ! Variables to be saved, moved here to allow for time average
+   integer :: navg = 0!< number of snapshots in the average
    real, allocatable :: vars(:,:,:,:)
-   integer :: navg !< number of snapshots in the average
 
 contains
 
@@ -72,7 +72,6 @@ contains
       use modglobal,only :imax,jmax
       allocate(vars(ceiling(1.0*imax/ncoarse),ceiling(1.0*jmax/ncoarse),khigh-klow+1,nvar))
       vars = 0
-      navg = 0
    endsubroutine allocatevars
 
    !> Initializing fielddump. Read out the namelist, initializing the variables
