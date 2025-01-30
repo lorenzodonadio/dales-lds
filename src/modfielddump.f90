@@ -126,7 +126,6 @@ contains
       call D_MPI_BCAST(lekm        ,1,0,comm3d,ierr)
       call D_MPI_BCAST(lsv       ,100,0,comm3d,ierr)
       call D_MPI_BCAST(qrminout    ,1,0,comm3d,ierr)
-      call D_MPI_BCAST(navg        ,1,0,comm3d,ierr)
 
       if (ncoarse==-1) then
          ncoarse = 1
@@ -234,41 +233,43 @@ contains
       use modsurfdata,only : thls,qts,thvs
       use modglobal, only : imax,i1,ih,jmax,j1,jh,k1,rk3step,&
          timee,dt_lim,cexpnr,ifoutput,rtimee
-      use modmpi,    only : myid,cmyidx, cmyidy, comm3d,D_MPI_BCAST
+      use modmpi,    only : myid,cmyidx, cmyidy
       use modstat_nc, only : lnetcdf, writestat_nc
       use modmicrodata, only : iqr, imicro, imicro_none
       use modsubgriddata, only : ekh, ekm
       implicit none
 
-      integer :: ierr
-
+      if (myid == 0) write(*,*) '### fielddump call',navg
+      
       if (.not. lfielddump) return
       if (rk3step/=3) return
-
+      
+      if (myid == 0) write(*,*) 'Before addvarsnetcdf',navg
+      
+      if (lnetcdf .and. lsavetimeavg) call addvarsnetcdf
+      
       if(timee<tnext) then
          dt_lim = min(dt_lim,tnext-timee)
          return
       end if
-
+      if (myid == 0) write(*,*) 'Past the weird timee IF'
+      
       tnext = tnext+idtav
       dt_lim = minval((/dt_lim,tnext-timee/))
       ! Add variables and increase navg coun
-      if (lnetcdf .and. lsavetimeavg) call addvarsnetcdf
       ! Only write fields if time is in the range (tmin, tmax)
       if (timee < itmin .or. timee > itmax) return
 
       if(lnetcdf) then
 
          if(lsavetimeavg) then
-
+            !save time averages
             write(*,*) "DEBUG before bcast? navg ", navg
-            call D_MPI_BCAST(navg        ,1,0,comm3d,ierr)
-            !DEBUG
             write(*,*) "DEBUG Dividing vars by, navg: ", navg
-            write(*,*) "Address of navg: ", loc(navg)
             vars = vars/navg
 
          else
+            !Save sanpshots
             call allocatevars
             call addvarsnetcdf
          endif
@@ -277,7 +278,7 @@ contains
          call writestat_nc(ncid,nvar,ncname,vars,nrec,ceiling(1.0*imax/ncoarse),ceiling(1.0*jmax/ncoarse),khigh-klow+1)
          
          if (.not.lsavetimeavg) deallocate(vars)
-         ! if(myid==0)then navg = 0
+         navg = 0
       end if
 
       if(lbinary) then
@@ -305,12 +306,10 @@ contains
       use modsubgriddata, only : ekh, ekm
       use modmpi,   only :myid
       integer k,n
-      if (myid == 0) then
-         write(*,*) 'DEBUG ADD 1 TO NAVG PROC 0',navg
-         ! we added 1 to the numberof observations in `vars`
-         navg = navg + 1
-         write(*,*) 'DEBUG RESULTING NAVG: ',navg
-      endif
+      if (myid == 0) write(*,*) 'DEBUG ADD 1 TO NAVG PROC 0',navg
+      ! we added 1 to the numberof observations in `vars`
+      navg = navg + 1
+      if (myid == 0) write(*,*) 'DEBUG NAVG AFTER 0',navg
 
       if (lu) vars(:,:,:,ind_u) = vars(:,:,:,ind_u) + u0(2:i1:ncoarse,2:j1:ncoarse,klow:khigh)
       if (lv) vars(:,:,:,ind_v) = vars(:,:,:,ind_v) + v0(2:i1:ncoarse,2:j1:ncoarse,klow:khigh)
