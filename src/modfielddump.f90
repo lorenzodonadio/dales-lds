@@ -113,6 +113,7 @@ contains
       call D_MPI_BCAST(lfielddump  ,1,0,comm3d,ierr)
       call D_MPI_BCAST(ldiracc     ,1,0,comm3d,ierr)
       call D_MPI_BCAST(lbinary     ,1,0,comm3d,ierr)
+      call D_MPI_BCAST(lsavetimeavg,1,0,comm3d,ierr)
       call D_MPI_BCAST(lu          ,1,0,comm3d,ierr)
       call D_MPI_BCAST(lv          ,1,0,comm3d,ierr)
       call D_MPI_BCAST(lw          ,1,0,comm3d,ierr)
@@ -255,6 +256,8 @@ contains
       if(lnetcdf) then
 
          if(lsavetimeavg) then
+            !DEBUG
+            write(*,*) "DEBUG Dividing vars by, navg: ", navg
             vars = vars/navg
          else
             call allocatevars
@@ -293,6 +296,8 @@ contains
       use modsubgriddata, only : ekh, ekm
 
       integer k,n
+      ! we added 1 to the numberof observations in `vars`
+      navg = navg + 1
 
       if (lu) vars(:,:,:,ind_u) = vars(:,:,:,ind_u) + u0(2:i1:ncoarse,2:j1:ncoarse,klow:khigh)
       if (lv) vars(:,:,:,ind_v) = vars(:,:,:,ind_v) + v0(2:i1:ncoarse,2:j1:ncoarse,klow:khigh)
@@ -327,7 +332,6 @@ contains
          end if
       end do
 
-      navg = navg + 1
 
    end subroutine addvarsnetcdf
 
