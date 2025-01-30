@@ -63,7 +63,7 @@ module modfielddump
    integer :: ind_ekh=-1,ind_ekm=-1
 
    ! Variables to be saved, moved here to allow for time average
-   integer :: navg = 0!< number of snapshots in the average
+   integer :: navg !< number of snapshots in the average
    real, allocatable :: vars(:,:,:,:)
 
 contains
@@ -90,6 +90,7 @@ contains
          dtav,lfielddump,ldiracc,lbinary,lsavetimeavg,klow,khigh,ncoarse, tmin, tmax,&
          lu, lv, lw, lqt, lql, lthl, lbuoy, lsv,lekh, lekm, qrminout
 
+      navg = 0
       dtav=dtav_glob
       klow=1
       khigh=kmax
@@ -125,6 +126,7 @@ contains
       call D_MPI_BCAST(lekm        ,1,0,comm3d,ierr)
       call D_MPI_BCAST(lsv       ,100,0,comm3d,ierr)
       call D_MPI_BCAST(qrminout    ,1,0,comm3d,ierr)
+      call D_MPI_BCAST(navg        ,1,0,comm3d,ierr)
 
       if (ncoarse==-1) then
          ncoarse = 1
@@ -232,11 +234,13 @@ contains
       use modsurfdata,only : thls,qts,thvs
       use modglobal, only : imax,i1,ih,jmax,j1,jh,k1,rk3step,&
          timee,dt_lim,cexpnr,ifoutput,rtimee
-      use modmpi,    only : myid,cmyidx, cmyidy
+      use modmpi,    only : myid,cmyidx, cmyidy, comm3d,D_MPI_BCAST
       use modstat_nc, only : lnetcdf, writestat_nc
       use modmicrodata, only : iqr, imicro, imicro_none
       use modsubgriddata, only : ekh, ekm
       implicit none
+
+      integer :: ierr
 
       if (.not. lfielddump) return
       if (rk3step/=3) return
@@ -256,6 +260,9 @@ contains
       if(lnetcdf) then
 
          if(lsavetimeavg) then
+
+            write(*,*) "DEBUG before bcast? navg ", navg
+            call D_MPI_BCAST(navg        ,1,0,comm3d,ierr)
             !DEBUG
             write(*,*) "DEBUG Dividing vars by, navg: ", navg
             write(*,*) "Address of navg: ", loc(navg)
@@ -270,7 +277,7 @@ contains
          call writestat_nc(ncid,nvar,ncname,vars,nrec,ceiling(1.0*imax/ncoarse),ceiling(1.0*jmax/ncoarse),khigh-klow+1)
          
          if (.not.lsavetimeavg) deallocate(vars)
-         navg = 0
+         ! if(myid==0)then navg = 0
       end if
 
       if(lbinary) then
@@ -296,10 +303,14 @@ contains
       use modglobal, only : i1,j1
       use modmicrodata, only : iqr, imicro, imicro_none
       use modsubgriddata, only : ekh, ekm
-
+      use modmpi,   only :myid
       integer k,n
-      ! we added 1 to the numberof observations in `vars`
-      navg = navg + 1
+      if (myid == 0) then
+         write(*,*) 'DEBUG ADD 1 TO NAVG PROC 0',navg
+         ! we added 1 to the numberof observations in `vars`
+         navg = navg + 1
+         write(*,*) 'DEBUG RESULTING NAVG: ',navg
+      endif
 
       if (lu) vars(:,:,:,ind_u) = vars(:,:,:,ind_u) + u0(2:i1:ncoarse,2:j1:ncoarse,klow:khigh)
       if (lv) vars(:,:,:,ind_v) = vars(:,:,:,ind_v) + v0(2:i1:ncoarse,2:j1:ncoarse,klow:khigh)
