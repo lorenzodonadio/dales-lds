@@ -64,7 +64,7 @@ module modfielddump
 
    ! Variables to be saved, moved here to allow for time average
    real, allocatable :: vars(:,:,:,:)
-   integer, save :: navg = 0 !< number of snapshots in the average
+   integer :: navg !< number of snapshots in the average
 
 contains
 
@@ -72,6 +72,7 @@ contains
       use modglobal,only :imax,jmax
       allocate(vars(ceiling(1.0*imax/ncoarse),ceiling(1.0*jmax/ncoarse),khigh-klow+1,nvar))
       vars = 0
+      navg = 0
    endsubroutine allocatevars
 
    !> Initializing fielddump. Read out the namelist, initializing the variables
@@ -258,7 +259,9 @@ contains
          if(lsavetimeavg) then
             !DEBUG
             write(*,*) "DEBUG Dividing vars by, navg: ", navg
+            write(*,*) "Address of navg: ", loc(navg)
             vars = vars/navg
+
          else
             call allocatevars
             call addvarsnetcdf
