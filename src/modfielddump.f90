@@ -268,7 +268,6 @@ contains
          call writestat_nc(ncid,nvar,ncname,vars,nrec,ceiling(1.0*imax/ncoarse),ceiling(1.0*jmax/ncoarse),khigh-klow+1)
          
          if (.not.lsavetimeavg) deallocate(vars)
-         write(*,*) "DEBUG navg to zerob4 : ", navg
          navg = 0
       end if
 
@@ -298,9 +297,7 @@ contains
 
       integer k,n
       ! we added 1 to the numberof observations in `vars`
-      write(*,*) "DEBUG addvarsnetcdf before increment: ", navg
       navg = navg + 1
-      write(*,*) "DEBUG addvarsnetcdf after increment: ", navg
 
       if (lu) vars(:,:,:,ind_u) = vars(:,:,:,ind_u) + u0(2:i1:ncoarse,2:j1:ncoarse,klow:khigh)
       if (lv) vars(:,:,:,ind_v) = vars(:,:,:,ind_v) + v0(2:i1:ncoarse,2:j1:ncoarse,klow:khigh)
