@@ -18,3 +18,9 @@ DALES is made available under the terms of the GNU GPL version 3, see the file C
 Formulation of the Dutch Atmospheric Large-Eddy Simulation (DALES) and overview of its applications, T. Heus et al, [Geosci. Model Dev., 3, 415-444, 2010](https://doi.org/10.5194/gmd-3-415-2010)
 
 Ouwersloot, H.G., Moene, A.F., Attema, J.J. et al. Large-Eddy Simulation Comparison of Neutral Flow Over a Canopy: Sensitivities to Physical and Numerical Conditions, and Similarity to Other Representations. [Boundary-Layer Meteorol 162, 71–89 (2017)](https://doi.org/10.1007/s10546-016-0182-5)
+
+### CHANGES by Lorenzo Donadio
+
+- Add `modgenstat_lite.f90`
+- Add domain rotation to the Coriolis implementation, in modforces
+- Add ekh fielddump option `modfielddump.f90` 

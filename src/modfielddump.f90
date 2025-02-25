@@ -201,6 +201,12 @@ contains
             ind = ind + 1
             call ncinfo(ncname(ind_ekh,:),'ekh','Eddy diffusivity Kh coefficient','m*2/s','tttt')
          end if
+         
+         if (lekm) then
+            ind_ekm = ind
+            ind = ind + 1
+            call ncinfo(ncname(ind_ekm,:),'ekm','Eddy diffusivity (atmidpoint) Km coefficient','m*2/s','tttt')
+         end if
 
          do n=1,nsv
             if (lsv(n)) then
@@ -320,6 +326,8 @@ contains
 
       ! EKH
       if (lekh) vars(:,:,:,ind_ekh) = vars(:,:,:,ind_ekh) + ekh(2:i1:ncoarse,2:j1:ncoarse,klow:khigh)
+      ! EKH
+      if (lekh) vars(:,:,:,ind_ekm) = vars(:,:,:,ind_ekm) + ekm(2:i1:ncoarse,2:j1:ncoarse,klow:khigh)
 
       ! scalar variables
       do n=1,nsv
